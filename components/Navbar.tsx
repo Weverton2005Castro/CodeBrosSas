@@ -57,9 +57,9 @@ export default function Navbar() {
             </Link>
           </li>
           <li>
-            <Link href="/admin" className="admin-link" onClick={() => setIsMobileMenuOpen(false)}>
+            {/* <Link href="/admin" className="admin-link" onClick={() => setIsMobileMenuOpen(false)}>
               Admin
-            </Link>
+            </Link> */}
           </li>
         </ul>
       </div>
