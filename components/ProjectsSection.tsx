@@ -49,7 +49,7 @@ export default function ProjectsSection() {
             "Aplicativo mobile para delivery com rastreamento em tempo real, pagamentos integrados e sistema de avaliações.",
           image: "/food-delivery-app.png",
           tags: ["React Native", "Firebase", "Maps"],
-          demoUrl: "#",
+          demoUrl: "https://praia-hipy.vercel.app/",
         },
       ]
       setProjects(defaultProjects)
