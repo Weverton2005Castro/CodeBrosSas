@@ -1,7 +1,8 @@
 "use client"
-
 import { useState, useEffect } from "react"
 import DataExport from "./DataExport"
+import { collection, getDocs, deleteDoc, doc } from "firebase/firestore"
+import { db } from "../FirebaseConfig"
 import "./AdminDashboard.css"
 
 interface AdminDashboardProps {
@@ -18,12 +19,13 @@ interface Project {
 }
 
 interface Message {
-  id: number
+  id: string
   name: string
   email: string
   projectType: string
   message: string
   date: string
+  createdAt?: any
 }
 
 export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
@@ -37,18 +39,23 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
     loadData()
   }, [])
 
-  const loadData = () => {
-    const storedProjects = localStorage.getItem("codebros_projects")
-    const storedMessages = localStorage.getItem("codebros_messages")
+  const loadData = async () => {
+    // 🔥 Carrega mensagens do Firestore
+    const messagesSnapshot = await getDocs(collection(db, "contact_messages"))
+    const firebaseMessages: Message[] = messagesSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Message[]
 
+    setMessages(firebaseMessages)
+
+    // 🔥 Pro projetos ainda usa localStorage
+    const storedProjects = localStorage.getItem("codebros_projects")
     if (storedProjects) {
       setProjects(JSON.parse(storedProjects))
     }
-
-    if (storedMessages) {
-      setMessages(JSON.parse(storedMessages))
-    }
   }
+
 
   const handleAddProject = () => {
     setEditingProject({
@@ -90,13 +97,15 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
     }
   }
 
-  const handleDeleteMessage = (id: number) => {
+  const handleDeleteMessage = async (id: string) => {
     if (confirm("Tem certeza que deseja excluir esta mensagem?")) {
-      const updatedMessages = messages.filter((m) => m.id !== id)
-      setMessages(updatedMessages)
-      localStorage.setItem("codebros_messages", JSON.stringify(updatedMessages))
+      await deleteDoc(doc(db, "contact_messages", id))
+
+      // Atualiza a UI sem reload
+      setMessages((prev) => prev.filter((m) => m.id !== id))
     }
   }
+
 
   return (
     <div className="admin-dashboard">
@@ -184,6 +193,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       Excluir
                     </button>
                   </div>
+
                   <div className="message-body">
                     <p>
                       <strong>Tipo:</strong> {message.projectType}
@@ -192,7 +202,10 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       <strong>Mensagem:</strong> {message.message}
                     </p>
                     <p className="message-date">
-                      <strong>Data:</strong> {new Date(message.date).toLocaleString("pt-BR")}
+                      <strong>Data:</strong>{" "}
+                      {message.createdAt?.seconds
+                        ? new Date(message.createdAt.seconds * 1000).toLocaleString("pt-BR")
+                        : "—"}
                     </p>
                   </div>
                 </div>

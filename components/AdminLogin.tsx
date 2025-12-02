@@ -1,7 +1,9 @@
 "use client"
-
 import { useState, type FormEvent } from "react"
+import { signInWithEmailAndPassword } from "firebase/auth"
+import { auth } from "../FirebaseConfig"
 import "./AdminLogin.css"
+
 
 interface AdminLoginProps {
   onLogin: () => void
@@ -13,22 +15,34 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError("")
     setIsLoading(true)
 
-    // Simple authentication (in production, use proper backend auth)
-    setTimeout(() => {
-      if (email === "admin@codebros.dev" && password === "codebros2024") {
-        localStorage.setItem("codebros_admin_auth", "true")
-        onLogin()
-      } else {
-        setError("Email ou senha incorretos")
-        setIsLoading(false)
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+
+      // Se quiser restringir apenas ao admin,
+      // você pode verificar o email aqui:
+      if (userCredential.user.email !== "admin@codebros.dev") {
+        throw new Error("Acesso não autorizado")
       }
-    }, 1000)
+
+      localStorage.setItem("codebros_admin_auth", "true")
+      onLogin()
+
+    } catch (err: any) {
+      console.log(err)
+      if (err.code === "auth/invalid-credential") {
+        setError("Email ou senha incorretos")
+      } else {
+        setError("Erro ao fazer login")
+      }
+      setIsLoading(false)
+    }
   }
+
 
   return (
     <div className="admin-login-page">

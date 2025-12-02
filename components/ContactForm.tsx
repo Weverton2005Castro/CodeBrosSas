@@ -1,5 +1,7 @@
 "use client"
 import { useState, type FormEvent } from "react"
+import { collection, addDoc, serverTimestamp } from "firebase/firestore"
+import { db } from "../FirebaseConfig"
 import "./ContactForm.css"
 
 interface FormData {
@@ -20,35 +22,67 @@ export default function ContactForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
 
+  // const handleSubmit = async (e: FormEvent) => {
+  //   e.preventDefault()
+  //   setIsSubmitting(true)
+
+  //   // Simulate API call
+  //   setTimeout(() => {
+  //     // Save to localStorage
+  //     const messages = JSON.parse(localStorage.getItem("codebros_messages") || "[]")
+  //     messages.push({
+  //       ...formData,
+  //       id: Date.now(),
+  //       date: new Date().toISOString(),
+  //     })
+  //     localStorage.setItem("codebros_messages", JSON.stringify(messages))
+
+  //     setIsSubmitting(false)
+  //     setSubmitStatus("success")
+
+  //     // Reset form
+  //     setTimeout(() => {
+  //       setFormData({
+  //         name: "",
+  //         email: "",
+  //         projectType: "",
+  //         message: "",
+  //       })
+  //       setSubmitStatus("idle")
+  //     }, 3000)
+  //   }, 1500)
+  // }
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
+    setSubmitStatus("idle")
 
-    // Simulate API call
-    setTimeout(() => {
-      // Save to localStorage
-      const messages = JSON.parse(localStorage.getItem("codebros_messages") || "[]")
-      messages.push({
+    try {
+      // isso aqui vai fazer saporra salvar no firestore
+      await addDoc(collection(db, "contact_messages"), {
         ...formData,
-        id: Date.now(),
-        date: new Date().toISOString(),
+        createdAt: serverTimestamp()
       })
-      localStorage.setItem("codebros_messages", JSON.stringify(messages))
 
       setIsSubmitting(false)
       setSubmitStatus("success")
 
-      // Reset form
+      //Resetar formulário
       setTimeout(() => {
         setFormData({
           name: "",
           email: "",
           projectType: "",
-          message: "",
+          message: ""
         })
         setSubmitStatus("idle")
       }, 3000)
-    }, 1500)
+    } catch (error) {
+      console.error("Erro ao salvar:", error )
+      setIsSubmitting(false)
+      setSubmitStatus("error")
+    }
   }
 
   const handleWhatsApp = () => {

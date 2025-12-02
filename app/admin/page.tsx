@@ -1,5 +1,4 @@
 "use client"
-
 import { useState, useEffect } from "react"
 import AdminLogin from "@/components/AdminLogin"
 import AdminDashboard from "@/components/AdminDashboard"
