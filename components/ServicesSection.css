@@ -34,13 +34,6 @@
   position: relative;
   overflow: hidden;
   transition: all var(--transition-normal);
-  opacity: 0;
-  transform: translateY(30px);
-}
-
-.service-card.visible {
-  opacity: 1;
-  transform: translateY(0);
 }
 
 .service-card::before {

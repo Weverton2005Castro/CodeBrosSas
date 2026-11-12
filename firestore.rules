@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email in ['admin@codebros.dev', 'codebroscontato@gmail.com']
+        && request.auth.token.email_verified == true;
+    }
+
+    function validContact() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['name', 'email', 'projectType', 'message', 'createdAt'])
+        && data.keys().hasOnly(['name', 'email', 'projectType', 'message', 'createdAt'])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 150
+        && data.email is string && data.email.size() > 0 && data.email.size() <= 254
+        && data.projectType is string && data.projectType.size() > 0 && data.projectType.size() <= 100
+        && data.message is string && data.message.size() > 0 && data.message.size() <= 5000
+        && data.createdAt == request.time;
+    }
+
+    match /projects/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /services/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /contact_messages/{id} {
+      allow create: if isAdmin() || validContact();
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}

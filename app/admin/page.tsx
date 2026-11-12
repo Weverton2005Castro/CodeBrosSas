@@ -1,26 +1,11 @@
-"use client"
-import { useState, useEffect } from "react"
-import AdminLogin from "@/components/AdminLogin"
-import AdminDashboard from "@/components/AdminDashboard"
+import AdminSession from "@/components/AdminSession"
+import { loadInitialCatalog, readPublicProjects, readPublicServices } from "@/lib/public-catalog"
 
-export default function AdminPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+export default async function AdminPage() {
+  const [initialProjects, initialServices] = await Promise.all([
+    loadInitialCatalog(readPublicProjects),
+    loadInitialCatalog(readPublicServices),
+  ])
 
-  useEffect(() => {
-    const auth = localStorage.getItem("codebros_admin_auth")
-    if (auth === "true") {
-      setIsAuthenticated(true)
-    }
-  }, [])
-
-  const handleLogin = () => {
-    setIsAuthenticated(true)
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem("codebros_admin_auth")
-    setIsAuthenticated(false)
-  }
-
-  return <>{isAuthenticated ? <AdminDashboard onLogout={handleLogout} /> : <AdminLogin onLogin={handleLogin} />}</>
+  return <AdminSession initialProjects={initialProjects} initialServices={initialServices} />
 }

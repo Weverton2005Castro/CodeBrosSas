@@ -1,246 +1,152 @@
-// Data management utilities for CodeBros system
-// Uses localStorage as a simple database
+import {
+  addDoc, collection, deleteDoc, doc, getDocsFromServer, onSnapshot,
+  serverTimestamp, Timestamp, updateDoc, writeBatch,
+  type DocumentData, type QueryDocumentSnapshot,
+} from "firebase/firestore"
+import { z } from "zod"
+import { db } from "@/FirebaseConfig"
 
-export interface Project {
-  id: number
-  title: string
-  description: string
-  image: string
-  tags: string[]
-  demoUrl?: string
+import {
+  projectFields, serviceFields, storedProjectFields,
+  type Project, type ProjectInput, type Service, type ServiceInput,
+} from "./catalog"
+
+const messageFields = z.object({
+  name: z.string().trim().min(1).max(150),
+  email: z.string().trim().email().max(254),
+  projectType: z.string().min(1).max(100),
+  message: z.string().trim().min(1).max(5000),
+})
+const backupId = z.union([z.string(), z.number().int().positive().transform(String)])
+  .pipe(z.string().min(1).max(1500).refine((id) => !id.includes("/") && !/^(__.*__|\.{1,2})$/.test(id)))
+const dateField = z.string().datetime({ offset: true }).optional()
+const backupSchema = z.object({
+  projects: z.array(projectFields.extend({ id: backupId })).optional(),
+  services: z.array(serviceFields.extend({ id: backupId })).optional(),
+  messages: z.array(messageFields.extend({ id: backupId, date: dateField })).optional(),
+}).refine((data) => data.projects || data.services || data.messages, "Nenhuma coleção no backup.")
+
+export type { Project, ProjectInput, Service, ServiceInput } from "./catalog"
+
+export type MessageInput = z.infer<typeof messageFields>
+export type Message = MessageInput & { id: string; date?: string }
+
+const projects = collection(db, "projects")
+const services = collection(db, "services")
+const messages = collection(db, "contact_messages")
+
+function readProject(snapshot: QueryDocumentSnapshot): Project {
+  return { ...storedProjectFields.parse(snapshot.data()), id: snapshot.id }
 }
 
-export interface Message {
-  id: number
-  name: string
-  email: string
-  projectType: string
-  message: string
-  date: string
+function readService(snapshot: QueryDocumentSnapshot): Service {
+  return { ...serviceFields.parse(snapshot.data()), id: snapshot.id }
 }
 
-export interface Service {
-  id: number
-  title: string
-  description: string
-  icon: string
-}
-
-// Storage keys
-const STORAGE_KEYS = {
-  PROJECTS: "codebros_projects",
-  MESSAGES: "codebros_messages",
-  SERVICES: "codebros_services",
-  AUTH: "codebros_admin_auth",
-}
-
-// Projects Management
-export const getProjects = (): Project[] => {
-  if (typeof window === "undefined") return []
-  const data = localStorage.getItem(STORAGE_KEYS.PROJECTS)
-  return data ? JSON.parse(data) : []
-}
-
-export const saveProjects = (projects: Project[]): void => {
-  if (typeof window === "undefined") return
-  localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects))
-}
-
-export const addProject = (project: Omit<Project, "id">): Project => {
-  const projects = getProjects()
-  const newProject = {
-    ...project,
-    id: Date.now(),
-  }
-  projects.push(newProject)
-  saveProjects(projects)
-  return newProject
-}
-
-export const updateProject = (id: number, updates: Partial<Project>): Project | null => {
-  const projects = getProjects()
-  const index = projects.findIndex((p) => p.id === id)
-  if (index === -1) return null
-
-  projects[index] = { ...projects[index], ...updates }
-  saveProjects(projects)
-  return projects[index]
-}
-
-export const deleteProject = (id: number): boolean => {
-  const projects = getProjects()
-  const filtered = projects.filter((p) => p.id !== id)
-  if (filtered.length === projects.length) return false
-
-  saveProjects(filtered)
-  return true
-}
-
-// Messages Management
-export const getMessages = (): Message[] => {
-  if (typeof window === "undefined") return []
-  const data = localStorage.getItem(STORAGE_KEYS.MESSAGES)
-  return data ? JSON.parse(data) : []
-}
-
-export const saveMessages = (messages: Message[]): void => {
-  if (typeof window === "undefined") return
-  localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(messages))
-}
-
-export const addMessage = (message: Omit<Message, "id" | "date">): Message => {
-  const messages = getMessages()
-  const newMessage = {
-    ...message,
-    id: Date.now(),
-    date: new Date().toISOString(),
-  }
-  messages.push(newMessage)
-  saveMessages(messages)
-  return newMessage
-}
-
-export const deleteMessage = (id: number): boolean => {
-  const messages = getMessages()
-  const filtered = messages.filter((m) => m.id !== id)
-  if (filtered.length === messages.length) return false
-
-  saveMessages(filtered)
-  return true
-}
-
-// Services Management
-export const getServices = (): Service[] => {
-  if (typeof window === "undefined") return []
-  const data = localStorage.getItem(STORAGE_KEYS.SERVICES)
-  return data ? JSON.parse(data) : []
-}
-
-export const saveServices = (services: Service[]): void => {
-  if (typeof window === "undefined") return
-  localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(services))
-}
-
-// Authentication
-export const isAuthenticated = (): boolean => {
-  if (typeof window === "undefined") return false
-  return localStorage.getItem(STORAGE_KEYS.AUTH) === "true"
-}
-
-export const setAuthenticated = (value: boolean): void => {
-  if (typeof window === "undefined") return
-  if (value) {
-    localStorage.setItem(STORAGE_KEYS.AUTH, "true")
-  } else {
-    localStorage.removeItem(STORAGE_KEYS.AUTH)
-  }
-}
-
-// Initialize default data
-export const initializeDefaultData = (): void => {
-  if (typeof window === "undefined") return
-
-  // Initialize projects if empty
-  const projects = getProjects()
-  if (projects.length === 0) {
-    const defaultProjects: Project[] = [
-      {
-        id: 1,
-        title: "E-commerce Moderno",
-        description:
-          "Plataforma completa de e-commerce com carrinho, pagamentos e painel administrativo. Interface moderna e responsiva.",
-        image: "/modern-ecommerce-website.png",
-        tags: ["React", "Next.js", "Stripe"],
-        demoUrl: "#",
-      },
-      {
-        id: 2,
-        title: "Dashboard Analytics",
-        description:
-          "Sistema de análise de dados com gráficos interativos, relatórios em tempo real e exportação de dados.",
-        image: "/analytics-dashboard-dark-theme.png",
-        tags: ["TypeScript", "Charts", "API"],
-        demoUrl: "#",
-      },
-      {
-        id: 3,
-        title: "App de Delivery",
-        description:
-          "Aplicativo mobile para delivery com rastreamento em tempo real, pagamentos integrados e sistema de avaliações.",
-        image: "/food-delivery-app.png",
-        tags: ["React Native", "Firebase", "Maps"],
-        demoUrl: "#",
-      },
-    ]
-    saveProjects(defaultProjects)
-  }
-
-  // Initialize services if empty
-  const services = getServices()
-  if (services.length === 0) {
-    const defaultServices: Service[] = [
-      {
-        id: 1,
-        title: "Sites e Landing Pages",
-        description: "Páginas modernas, responsivas e otimizadas para conversão. Design atraente que vende.",
-        icon: "🌐",
-      },
-      {
-        id: 2,
-        title: "Sistemas Web",
-        description: "Plataformas completas e escaláveis. Dashboards, CRMs, ERPs e soluções personalizadas.",
-        icon: "💻",
-      },
-      {
-        id: 3,
-        title: "Aplicativos Mobile",
-        description: "Apps nativos e híbridos para iOS e Android. Experiência mobile de alta qualidade.",
-        icon: "📱",
-      },
-      {
-        id: 4,
-        title: "Integrações e Automações",
-        description: "Conecte seus sistemas, automatize processos e aumente a eficiência do seu negócio.",
-        icon: "🔗",
-      },
-      {
-        id: 5,
-        title: "Consultoria Técnica",
-        description: "Orientação especializada para escolher as melhores tecnologias e arquiteturas.",
-        icon: "🎯",
-      },
-      {
-        id: 6,
-        title: "Suporte e Manutenção",
-        description: "Mantenha seus sistemas sempre atualizados, seguros e funcionando perfeitamente.",
-        icon: "🛠️",
-      },
-    ]
-    saveServices(defaultServices)
-  }
-}
-
-// Export data (for backup)
-export const exportAllData = () => {
+function readMessage(snapshot: QueryDocumentSnapshot): Message {
+  const data = snapshot.data()
+  const date = data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : dateField.safeParse(data.date)
   return {
-    projects: getProjects(),
-    messages: getMessages(),
-    services: getServices(),
+    ...messageFields.parse(data),
+    id: snapshot.id,
+    date: typeof date === "string" ? date : date.success ? date.data : undefined,
+  }
+}
+
+function subscribe<T>(
+  source: typeof projects,
+  read: (snapshot: QueryDocumentSnapshot) => T,
+  receive: (records: T[]) => void,
+  fail: (error: Error) => void,
+) {
+  function reportError(error: Error) {
+    // Validation errors and Firebase errors carry different diagnostics.
+    const detail = error instanceof z.ZodError
+      ? error.issues.map(({ path, code }) => ({ path, code }))
+      : "code" in error ? error.code : error.name
+    console.warn(`[Firestore] Falha ao carregar ${source.path}.`, detail)
+    fail(error)
+  }
+
+  return onSnapshot(source, { includeMetadataChanges: true }, (snapshot) => {
+    if (snapshot.empty && snapshot.metadata.fromCache) return
+    try {
+      receive(snapshot.docs.map(read))
+    } catch (error) {
+      reportError(error instanceof Error ? error : new Error("Dados inválidos no Firestore."))
+    }
+  }, reportError)
+}
+
+export const watchProjects = (receive: (records: Project[]) => void, fail: (error: Error) => void) =>
+  subscribe(projects, readProject, receive, fail)
+export const watchServices = (receive: (records: Service[]) => void, fail: (error: Error) => void) =>
+  subscribe(services, readService, receive, fail)
+export const watchMessages = (receive: (records: Message[]) => void, fail: (error: Error) => void) =>
+  subscribe(messages, readMessage, (records) => {
+    receive(records.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "")))
+  }, fail)
+
+export async function saveProject(id: string | undefined, values: ProjectInput) {
+  const { demoUrl = "", ...fields } = projectFields.parse(values)
+  const project = { ...fields, demoUrl: demoUrl === "#" ? "" : demoUrl, tags: fields.tags.filter(Boolean) }
+  if (id) await updateDoc(doc(projects, id), project)
+  else await addDoc(projects, project)
+}
+
+export async function saveService(id: string | undefined, values: ServiceInput) {
+  const service = serviceFields.parse(values)
+  if (id) await updateDoc(doc(services, id), service)
+  else await addDoc(services, service)
+}
+
+export const deleteProject = (id: string) => deleteDoc(doc(projects, id))
+export const deleteService = (id: string) => deleteDoc(doc(services, id))
+export const deleteMessage = (id: string) => deleteDoc(doc(messages, id))
+export const addMessage = (values: MessageInput) =>
+  addDoc(messages, { ...messageFields.parse(values), createdAt: serverTimestamp() })
+
+export async function exportAllData() {
+  const [projectDocs, serviceDocs, messageDocs] = await Promise.all([
+    getDocsFromServer(projects), getDocsFromServer(services), getDocsFromServer(messages),
+  ])
+  return {
+    projects: projectDocs.docs.map(readProject),
+    services: serviceDocs.docs.map(readService),
+    messages: messageDocs.docs.map(readMessage),
     exportDate: new Date().toISOString(),
   }
 }
 
-// Import data (for restore)
-export const importAllData = (data: { projects?: Project[]; messages?: Message[]; services?: Service[] }) => {
-  if (data.projects) saveProjects(data.projects)
-  if (data.messages) saveMessages(data.messages)
-  if (data.services) saveServices(data.services)
+async function replaceCollection(
+  batch: ReturnType<typeof writeBatch>,
+  source: typeof projects,
+  records: Array<{ id: string } & DocumentData>,
+) {
+  const incoming = new Map(records.map(({ id, ...fields }) => [id, fields]))
+  if (incoming.size !== records.length) throw new Error("O backup contém IDs duplicados.")
+
+  const existing = await getDocsFromServer(source)
+  const removed = existing.docs.filter((snapshot) => !incoming.has(snapshot.id))
+  for (const snapshot of removed) batch.delete(snapshot.ref)
+  for (const [id, fields] of incoming) batch.set(doc(source, id), fields)
+  return removed.length + incoming.size
 }
 
-// Clear all data
-export const clearAllData = () => {
-  if (typeof window === "undefined") return
-  localStorage.removeItem(STORAGE_KEYS.PROJECTS)
-  localStorage.removeItem(STORAGE_KEYS.MESSAGES)
-  localStorage.removeItem(STORAGE_KEYS.SERVICES)
+export async function importAllData(input: unknown) {
+  const data = backupSchema.parse(input)
+  const batch = writeBatch(db)
+  const counts = await Promise.all([
+    data.projects && replaceCollection(batch, projects, data.projects),
+    data.services && replaceCollection(batch, services, data.services),
+    data.messages && replaceCollection(batch, messages, data.messages.map(({ date, ...fields }) => ({
+      ...fields,
+      ...(date ? { createdAt: Timestamp.fromDate(new Date(date)) } : {}),
+    }))),
+  ])
+  const operations = counts.reduce<number>((sum, count) => sum + (count ?? 0), 0)
+  if (operations > 500) throw new Error("Esta operação excede o limite de 500 alterações por lote.")
+  if (operations) await batch.commit()
 }
+
+export const clearAllData = () => importAllData({ projects: [], services: [], messages: [] })

@@ -1,18 +1,10 @@
 "use client"
 import { useState, type FormEvent } from "react"
-import { collection, addDoc, serverTimestamp } from "firebase/firestore"
-import { db } from "../FirebaseConfig"
+import { addMessage, type MessageInput } from "@/lib/storage"
 import "./ContactForm.css"
 
-interface FormData {
-  name: string
-  email: string
-  projectType: string
-  message: string
-}
-
 export default function ContactForm() {
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<MessageInput>({
     name: "",
     email: "",
     projectType: "",
@@ -22,66 +14,19 @@ export default function ContactForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
 
-  // const handleSubmit = async (e: FormEvent) => {
-  //   e.preventDefault()
-  //   setIsSubmitting(true)
-
-  //   // Simulate API call
-  //   setTimeout(() => {
-  //     // Save to localStorage
-  //     const messages = JSON.parse(localStorage.getItem("codebros_messages") || "[]")
-  //     messages.push({
-  //       ...formData,
-  //       id: Date.now(),
-  //       date: new Date().toISOString(),
-  //     })
-  //     localStorage.setItem("codebros_messages", JSON.stringify(messages))
-
-  //     setIsSubmitting(false)
-  //     setSubmitStatus("success")
-
-  //     // Reset form
-  //     setTimeout(() => {
-  //       setFormData({
-  //         name: "",
-  //         email: "",
-  //         projectType: "",
-  //         message: "",
-  //       })
-  //       setSubmitStatus("idle")
-  //     }, 3000)
-  //   }, 1500)
-  // }
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     setSubmitStatus("idle")
 
     try {
-      // isso aqui vai fazer saporra salvar no firestore
-      await addDoc(collection(db, "contact_messages"), {
-        ...formData,
-        createdAt: serverTimestamp()
-      })
-
-      setIsSubmitting(false)
+      await addMessage(formData)
+      setFormData({ name: "", email: "", projectType: "", message: "" })
       setSubmitStatus("success")
-
-      //Resetar formulário
-      setTimeout(() => {
-        setFormData({
-          name: "",
-          email: "",
-          projectType: "",
-          message: ""
-        })
-        setSubmitStatus("idle")
-      }, 3000)
-    } catch (error) {
-      console.error("Erro ao salvar:", error )
-      setIsSubmitting(false)
+    } catch {
       setSubmitStatus("error")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -143,6 +88,7 @@ export default function ContactForm() {
                 <input
                   type="text"
                   id="name"
+                  maxLength={150}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
@@ -155,6 +101,7 @@ export default function ContactForm() {
                 <input
                   type="email"
                   id="email"
+                  maxLength={254}
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
@@ -184,6 +131,7 @@ export default function ContactForm() {
                 <label htmlFor="message">Mensagem</label>
                 <textarea
                   id="message"
+                  maxLength={5000}
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   required
@@ -212,6 +160,9 @@ export default function ContactForm() {
                 )}
               </button>
 
+              {submitStatus === "error" && (
+                <p role="alert">Não foi possível enviar a mensagem. Tente novamente.</p>
+              )}
               {submitStatus === "success" && (
                 <div className="success-message">Mensagem enviada! Entraremos em contato em breve.</div>
               )}

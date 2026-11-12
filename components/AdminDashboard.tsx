@@ -1,111 +1,88 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, type FormEvent } from "react"
+import { useMessages, type useProjects, type useServices } from "@/hooks/use-data"
+import { deleteMessage, deleteProject, deleteService, saveProject, saveService } from "@/lib/storage"
 import DataExport from "./DataExport"
-import { collection, getDocs, deleteDoc, doc } from "firebase/firestore"
-import { db } from "../FirebaseConfig"
 import "./AdminDashboard.css"
+
+type Editor = {
+  kind: "project" | "service"
+  id?: string
+  title: string
+  description: string
+  image?: string
+  tags?: string
+  demoUrl?: string
+  icon?: string
+}
 
 interface AdminDashboardProps {
   onLogout: () => void
+  sessionError: string
+  projectData: ReturnType<typeof useProjects>
+  serviceData: ReturnType<typeof useServices>
 }
 
-interface Project {
-  id: number
-  title: string
-  description: string
-  image: string
-  tags: string[]
-  demoUrl?: string
-}
+export default function AdminDashboard({ onLogout, sessionError, projectData, serviceData }: AdminDashboardProps) {
+  const [activeTab, setActiveTab] = useState<"projects" | "services" | "messages">("projects")
+  const messageData = useMessages()
+  const { records: projects } = projectData
+  const { records: services } = serviceData
+  const { records: messages } = messageData
+  const activeData = { projects: projectData, services: serviceData, messages: messageData }[activeTab]
+  const [editor, setEditor] = useState<Editor | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [actionError, setActionError] = useState("")
 
-interface Message {
-  id: string
-  name: string
-  email: string
-  projectType: string
-  message: string
-  date: string
-  createdAt?: any
-}
+  function openEditor(values: Editor) {
+    setActionError("")
+    setEditor(values)
+  }
 
-export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<"projects" | "messages">("projects")
-  const [projects, setProjects] = useState<Project[]>([])
-  const [messages, setMessages] = useState<Message[]>([])
-  const [isEditing, setIsEditing] = useState(false)
-  const [editingProject, setEditingProject] = useState<Project | null>(null)
+  function closeEditor() {
+    if (busy) return
+    setEditor(null)
+    setActionError("")
+  }
 
-  useEffect(() => {
-    loadData()
-  }, [])
+  async function handleSave(event: FormEvent) {
+    event.preventDefault()
+    if (!editor || busy) return
+    setBusy(true)
+    setActionError("")
 
-  const loadData = async () => {
-    // 🔥 Carrega mensagens do Firestore
-    const messagesSnapshot = await getDocs(collection(db, "contact_messages"))
-    const firebaseMessages: Message[] = messagesSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Message[]
-
-    setMessages(firebaseMessages)
-
-    // 🔥 Pro projetos ainda usa localStorage
-    const storedProjects = localStorage.getItem("codebros_projects")
-    if (storedProjects) {
-      setProjects(JSON.parse(storedProjects))
+    try {
+      if (editor.kind === "project") {
+        await saveProject(editor.id, {
+          title: editor.title,
+          description: editor.description,
+          image: editor.image?.trim() ?? "",
+          tags: editor.tags?.split(",").map((tag) => tag.trim()) ?? [],
+          demoUrl: editor.demoUrl?.trim() ?? "",
+        })
+      } else {
+        await saveService(editor.id, { title: editor.title, description: editor.description, icon: editor.icon ?? "" })
+      }
+      setEditor(null)
+    } catch {
+      setActionError("Não foi possível salvar. Confira os campos, os links e as permissões.")
+    } finally {
+      setBusy(false)
     }
   }
 
-
-  const handleAddProject = () => {
-    setEditingProject({
-      id: Date.now(),
-      title: "",
-      description: "",
-      image: "",
-      tags: [],
-      demoUrl: "",
-    })
-    setIsEditing(true)
-  }
-
-  const handleEditProject = (project: Project) => {
-    setEditingProject(project)
-    setIsEditing(true)
-  }
-
-  const handleSaveProject = () => {
-    if (!editingProject) return
-
-    const updatedProjects = editingProject.id
-      ? projects.some((p) => p.id === editingProject.id)
-        ? projects.map((p) => (p.id === editingProject.id ? editingProject : p))
-        : [...projects, editingProject]
-      : [...projects, editingProject]
-
-    setProjects(updatedProjects)
-    localStorage.setItem("codebros_projects", JSON.stringify(updatedProjects))
-    setIsEditing(false)
-    setEditingProject(null)
-  }
-
-  const handleDeleteProject = (id: number) => {
-    if (confirm("Tem certeza que deseja excluir este projeto?")) {
-      const updatedProjects = projects.filter((p) => p.id !== id)
-      setProjects(updatedProjects)
-      localStorage.setItem("codebros_projects", JSON.stringify(updatedProjects))
+  async function handleDelete(label: string, remove: () => Promise<void>) {
+    if (busy || !confirm(`Excluir ${label}?`)) return
+    setBusy(true)
+    setActionError("")
+    try {
+      await remove()
+    } catch {
+      setActionError(`Não foi possível excluir ${label}.`)
+    } finally {
+      setBusy(false)
     }
   }
-
-  const handleDeleteMessage = async (id: string) => {
-    if (confirm("Tem certeza que deseja excluir esta mensagem?")) {
-      await deleteDoc(doc(db, "contact_messages", id))
-
-      // Atualiza a UI sem reload
-      setMessages((prev) => prev.filter((m) => m.id !== id))
-    }
-  }
-
 
   return (
     <div className="admin-dashboard">
@@ -123,12 +100,20 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
       </nav>
 
       <div className="admin-content">
+        {sessionError && <p role="alert">{sessionError}</p>}
+        {actionError && !editor && <p role="alert">{actionError}</p>}
         <div className="admin-tabs">
           <button
             className={`tab-button ${activeTab === "projects" ? "active" : ""}`}
             onClick={() => setActiveTab("projects")}
           >
             Projetos ({projects.length})
+          </button>
+          <button
+            className={`tab-button ${activeTab === "services" ? "active" : ""}`}
+            onClick={() => setActiveTab("services")}
+          >
+            Serviços ({services.length})
           </button>
           <button
             className={`tab-button ${activeTab === "messages" ? "active" : ""}`}
@@ -138,11 +123,17 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
           </button>
         </div>
 
+        {activeData.isLoading && <p role="status">Carregando dados…</p>}
+        {activeData.error && <p role="alert">Não foi possível carregar os dados do Firestore.</p>}
+        {!activeData.isLoading && !activeData.error && activeData.records.length === 0 && (
+          <p>Nenhum registro encontrado.</p>
+        )}
+
         {activeTab === "projects" && (
           <div className="tab-content">
             <div className="content-header">
               <h2>Gerenciar Projetos</h2>
-              <button onClick={handleAddProject} className="add-button">
+              <button disabled={busy} onClick={() => openEditor({ kind: "project", title: "", description: "" })} className="add-button">
                 + Adicionar Projeto
               </button>
             </div>
@@ -150,7 +141,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
             <div className="projects-list">
               {projects.map((project) => (
                 <div key={project.id} className="project-item">
-                  <img src={project.image || "/placeholder.svg"} alt={project.title} className="project-thumb" />
+                  <img src={project.image || "/placeholder.svg"} alt={project.title} className="project-thumb" loading="lazy" decoding="async" />
                   <div className="project-info">
                     <h3>{project.title}</h3>
                     <p>{project.description}</p>
@@ -161,10 +152,10 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     </div>
                   </div>
                   <div className="project-actions">
-                    <button onClick={() => handleEditProject(project)} className="edit-btn">
+                    <button disabled={busy} onClick={() => openEditor({ ...project, kind: "project", tags: project.tags.join(", ") })} className="edit-btn">
                       Editar
                     </button>
-                    <button onClick={() => handleDeleteProject(project.id)} className="delete-btn">
+                    <button disabled={busy} onClick={() => handleDelete("este projeto", () => deleteProject(project.id))} className="delete-btn">
                       Excluir
                     </button>
                   </div>
@@ -172,6 +163,37 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
               ))}
             </div>
             <DataExport />
+          </div>
+        )}
+
+        {activeTab === "services" && (
+          <div className="tab-content">
+            <div className="content-header">
+              <h2>Gerenciar Serviços</h2>
+              <button disabled={busy} onClick={() => openEditor({ kind: "service", title: "", description: "" })} className="add-button">
+                + Adicionar Serviço
+              </button>
+            </div>
+
+            <div className="projects-list">
+              {services.map((service) => (
+                <div key={service.id} className="project-item">
+                  <span aria-hidden="true">{service.icon}</span>
+                  <div className="project-info">
+                    <h3>{service.title}</h3>
+                    <p>{service.description}</p>
+                  </div>
+                  <div className="project-actions">
+                    <button disabled={busy} onClick={() => openEditor({ ...service, kind: "service" })} className="edit-btn">
+                      Editar
+                    </button>
+                    <button disabled={busy} onClick={() => handleDelete("este serviço", () => deleteService(service.id))} className="delete-btn">
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -189,7 +211,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       <h3>{message.name}</h3>
                       <p className="message-email">{message.email}</p>
                     </div>
-                    <button onClick={() => handleDeleteMessage(message.id)} className="delete-btn">
+                    <button disabled={busy} onClick={() => handleDelete("esta mensagem", () => deleteMessage(message.id))} className="delete-btn">
                       Excluir
                     </button>
                   </div>
@@ -203,8 +225,8 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     </p>
                     <p className="message-date">
                       <strong>Data:</strong>{" "}
-                      {message.createdAt?.seconds
-                        ? new Date(message.createdAt.seconds * 1000).toLocaleString("pt-BR")
+                      {message.date
+                        ? new Date(message.date).toLocaleString("pt-BR")
                         : "—"}
                     </p>
                   </div>
@@ -215,76 +237,59 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
         )}
       </div>
 
-      {isEditing && editingProject && (
-        <div className="modal-overlay" onClick={() => setIsEditing(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      {editor && (
+        <div className="modal-overlay" onClick={closeEditor}>
+          <div className="modal-content" onClick={(event) => event.stopPropagation()}>
             <div className="modal-header">
-              <h2>{editingProject.id ? "Editar Projeto" : "Novo Projeto"}</h2>
-              <button className="modal-close" onClick={() => setIsEditing(false)}>
+              <h2>{editor.id ? "Editar" : "Adicionar"} {editor.kind === "project" ? "projeto" : "serviço"}</h2>
+              <button type="button" aria-label="Fechar" className="modal-close" disabled={busy} onClick={closeEditor}>
                 ×
               </button>
             </div>
 
-            <div className="modal-body">
+            <form className="modal-body" onSubmit={handleSave}>
               <div className="form-group">
-                <label>Título</label>
-                <input
-                  type="text"
-                  value={editingProject.title}
-                  onChange={(e) => setEditingProject({ ...editingProject, title: e.target.value })}
-                  placeholder="Nome do projeto"
-                />
+                <label htmlFor="entry-title">Título</label>
+                <input id="entry-title" required disabled={busy} value={editor.title}
+                  onChange={(event) => setEditor({ ...editor, title: event.target.value })} />
+              </div>
+              <div className="form-group">
+                <label htmlFor="entry-description">Descrição</label>
+                <textarea id="entry-description" required disabled={busy} value={editor.description} rows={4}
+                  onChange={(event) => setEditor({ ...editor, description: event.target.value })} />
               </div>
 
-              <div className="form-group">
-                <label>Descrição</label>
-                <textarea
-                  value={editingProject.description}
-                  onChange={(e) => setEditingProject({ ...editingProject, description: e.target.value })}
-                  placeholder="Descrição do projeto"
-                  rows={4}
-                />
-              </div>
+              {editor.kind === "project" ? (
+                <>
+                  <div className="form-group">
+                    <label htmlFor="entry-image">URL da imagem</label>
+                    <input id="entry-image" disabled={busy} value={editor.image ?? ""}
+                      onChange={(event) => setEditor({ ...editor, image: event.target.value })} />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="entry-tags">Tags separadas por vírgula</label>
+                    <input id="entry-tags" disabled={busy} value={editor.tags ?? ""}
+                      onChange={(event) => setEditor({ ...editor, tags: event.target.value })} />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="entry-demo">URL da demonstração (opcional)</label>
+                    <input id="entry-demo" type="url" disabled={busy} value={editor.demoUrl === "#" ? "" : editor.demoUrl ?? ""}
+                      onChange={(event) => setEditor({ ...editor, demoUrl: event.target.value })} />
+                  </div>
+                </>
+              ) : (
+                <div className="form-group">
+                  <label htmlFor="entry-icon">Ícone (emoji ou texto)</label>
+                  <input id="entry-icon" required disabled={busy} value={editor.icon ?? ""}
+                    onChange={(event) => setEditor({ ...editor, icon: event.target.value })} />
+                </div>
+              )}
 
-              <div className="form-group">
-                <label>URL da Imagem</label>
-                <input
-                  type="text"
-                  value={editingProject.image}
-                  onChange={(e) => setEditingProject({ ...editingProject, image: e.target.value })}
-                  placeholder="https://exemplo.com/imagem.jpg"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Tags (separadas por vírgula)</label>
-                <input
-                  type="text"
-                  value={editingProject.tags.join(", ")}
-                  onChange={(e) =>
-                    setEditingProject({
-                      ...editingProject,
-                      tags: e.target.value.split(",").map((t) => t.trim()),
-                    })
-                  }
-                  placeholder="React, Next.js, TypeScript"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>URL de Demonstração (opcional)</label>
-                <input
-                  type="text"
-                  value={editingProject.demoUrl || ""}
-                  onChange={(e) => setEditingProject({ ...editingProject, demoUrl: e.target.value })}
-                  placeholder="https://demo.exemplo.com"
-                />
-              </div>
-
-              <button onClick={handleSaveProject} className="save-button">
-                Salvar Projeto
+              {actionError && <p role="alert">{actionError}</p>}
+              <button type="submit" disabled={busy} className="save-button">
+                {busy ? "Salvando…" : "Salvar"}
               </button>
-            </div>
+            </form>
           </div>
         </div>
       )}

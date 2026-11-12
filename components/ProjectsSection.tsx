@@ -1,61 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useProjects } from "@/hooks/use-data"
+import type { Project } from "@/lib/catalog"
 import "./ProjectsSection.css"
 
-interface Project {
-  id: number
-  title: string
-  description: string
-  image: string
-  tags: string[]
-  demoUrl?: string
-}
-
-export default function ProjectsSection() {
-  const [projects, setProjects] = useState<Project[]>([])
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
-
-  useEffect(() => {
-    // Load projects from localStorage
-    const storedProjects = localStorage.getItem("codebros_projects")
-    if (storedProjects) {
-      setProjects(JSON.parse(storedProjects))
-    } else {
-      // Default projects
-      const defaultProjects: Project[] = [
-        {
-          id: 1,
-          title: "E-commerce Moderno",
-          description:
-            "Plataforma completa de e-commerce com carrinho, pagamentos e painel administrativo. Interface moderna e responsiva.",
-          image: "/modern-ecommerce-website.png",
-          tags: ["React", "Next.js", "Stripe"],
-          demoUrl: "#",
-        },
-        {
-          id: 2,
-          title: "Dashboard Analytics",
-          description:
-            "Sistema de análise de dados com gráficos interativos, relatórios em tempo real e exportação de dados.",
-          image: "/analytics-dashboard-dark-theme.png",
-          tags: ["TypeScript", "Charts", "API"],
-          demoUrl: "#",
-        },
-        {
-          id: 3,
-          title: "App de Delivery",
-          description:
-            "Aplicativo mobile para delivery com rastreamento em tempo real, pagamentos integrados e sistema de avaliações.",
-          image: "/food-delivery-app.png",
-          tags: ["React Native", "Firebase", "Maps"],
-          demoUrl: "https://praia-hipy.vercel.app/",
-        },
-      ]
-      setProjects(defaultProjects)
-      localStorage.setItem("codebros_projects", JSON.stringify(defaultProjects))
-    }
-  }, [])
+export default function ProjectsSection({ initialProjects }: { initialProjects?: Project[] }) {
+  const { records: projects, isLoading, error } = useProjects(initialProjects)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const selectedProject = projects.find((project) => project.id === selectedId)
 
   return (
     <>
@@ -68,11 +21,14 @@ export default function ProjectsSection() {
             <p className="section-subtitle">Conheça alguns dos projetos que desenvolvemos</p>
           </div>
 
+          {isLoading && <p role="status">Carregando projetos…</p>}
+          {error && <p role="alert">Não foi possível carregar os projetos.</p>}
+          {!isLoading && !error && projects.length === 0 && <p>Nenhum projeto publicado ainda.</p>}
           <div className="projects-grid">
             {projects.map((project) => (
-              <div key={project.id} className="project-card" onClick={() => setSelectedProject(project)}>
+              <div key={project.id} className="project-card" onClick={() => setSelectedId(project.id)}>
                 <div className="project-image-container">
-                  <img src={project.image || "/placeholder.svg"} alt={project.title} className="project-image" />
+                  <img src={project.image || "/placeholder.svg"} alt={project.title} className="project-image" loading="lazy" decoding="async" />
                   <div className="project-overlay">
                     <span className="view-details">Ver detalhes</span>
                   </div>
@@ -95,9 +51,9 @@ export default function ProjectsSection() {
       </section>
 
       {selectedProject && (
-        <div className="modal-overlay" onClick={() => setSelectedProject(null)}>
+        <div className="modal-overlay" onClick={() => setSelectedId(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setSelectedProject(null)}>
+            <button className="modal-close" onClick={() => setSelectedId(null)}>
               ×
             </button>
             <img
@@ -115,7 +71,7 @@ export default function ProjectsSection() {
                   </span>
                 ))}
               </div>
-              {selectedProject.demoUrl && (
+              {selectedProject.demoUrl && selectedProject.demoUrl !== "#" && (
                 <a
                   href={selectedProject.demoUrl}
                   className="modal-demo-button"

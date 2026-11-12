@@ -1,15 +1,13 @@
 "use client"
 import { useState, type FormEvent } from "react"
-import { signInWithEmailAndPassword } from "firebase/auth"
-import { auth } from "../FirebaseConfig"
+import { sendEmailVerification, signInWithEmailAndPassword, signOut } from "firebase/auth"
+import { FirebaseError } from "firebase/app"
+import { auth } from "@/FirebaseConfig"
+import { isAdminEmail } from "@/lib/admin-auth"
 import "./AdminLogin.css"
 
 
-interface AdminLoginProps {
-  onLogin: () => void
-}
-
-export default function AdminLogin({ onLogin }: AdminLoginProps) {
+export default function AdminLogin() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -21,28 +19,27 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
     setIsLoading(true)
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+      const { user } = await signInWithEmailAndPassword(auth, email.trim(), password)
 
-      // Se quiser restringir apenas ao admin,
-      // você pode verificar o email aqui:
-      if (userCredential.user.email !== "admin@codebros.dev") {
-        throw new Error("Acesso não autorizado")
+      if (!isAdminEmail(user.email)) {
+        await signOut(auth)
+        setError("Esta conta não tem acesso administrativo.")
+      } else if (!user.emailVerified) {
+        try {
+          await sendEmailVerification(user)
+          setError("Enviamos um link de verificação. Confirme o e-mail e entre novamente.")
+        } finally {
+          await signOut(auth)
+        }
       }
-
-      localStorage.setItem("codebros_admin_auth", "true")
-      onLogin()
-
-    } catch (err: any) {
-      console.log(err)
-      if (err.code === "auth/invalid-credential") {
-        setError("Email ou senha incorretos")
-      } else {
-        setError("Erro ao fazer login")
-      }
+    } catch (error) {
+      setError(error instanceof FirebaseError && error.code === "auth/invalid-credential"
+        ? "Email ou senha incorretos."
+        : "Não foi possível concluir o login. Tente novamente.")
+    } finally {
       setIsLoading(false)
     }
   }
-
 
   return (
     <div className="admin-login-page">
@@ -64,7 +61,7 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="admin@codebros.dev"
+              placeholder="Seu e-mail administrativo"
               autoComplete="email"
             />
           </div>
@@ -95,15 +92,6 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
             )}
           </button>
 
-          <div className="login-hint">
-            <p>Credenciais padrão:</p>
-            <p>
-              <strong>Email:</strong> admin@codebros.dev
-            </p>
-            <p>
-              <strong>Senha:</strong> codebros2024
-            </p>
-          </div>
         </form>
       </div>
     </div>

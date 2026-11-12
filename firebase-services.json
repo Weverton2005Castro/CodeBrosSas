@@ -1,0 +1,40 @@
+{
+  "services": [
+    {
+      "id": "1",
+      "title": "Sites e Landing Pages",
+      "description": "Páginas modernas, responsivas e otimizadas para conversão. Design atraente que vende.",
+      "icon": "🌐"
+    },
+    {
+      "id": "2",
+      "title": "Sistemas Web",
+      "description": "Plataformas completas e escaláveis. Dashboards, CRMs, ERPs e soluções personalizadas.",
+      "icon": "💻"
+    },
+    {
+      "id": "3",
+      "title": "Aplicativos Mobile",
+      "description": "Apps nativos e híbridos para iOS e Android. Experiência mobile de alta qualidade.",
+      "icon": "📱"
+    },
+    {
+      "id": "4",
+      "title": "Integrações e Automações",
+      "description": "Conecte seus sistemas, automatize processos e aumente a eficiência do seu negócio.",
+      "icon": "🔗"
+    },
+    {
+      "id": "5",
+      "title": "Consultoria Técnica",
+      "description": "Orientação especializada para escolher as melhores tecnologias e arquiteturas.",
+      "icon": "🎯"
+    },
+    {
+      "id": "6",
+      "title": "Suporte e Manutenção",
+      "description": "Mantenha seus sistemas sempre atualizados, seguros e funcionando perfeitamente.",
+      "icon": "🛠️"
+    }
+  ]
+}

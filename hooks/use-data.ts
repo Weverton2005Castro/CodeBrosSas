@@ -1,38 +1,37 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import type { Project, Message } from "@/lib/storage"
-import { getProjects, getMessages, initializeDefaultData } from "@/lib/storage"
+import { useEffect, useState } from "react"
+import { watchMessages, watchProjects, watchServices, type Project, type Service } from "@/lib/storage"
 
-export function useProjects() {
-  const [projects, setProjects] = useState<Project[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    initializeDefaultData()
-    setProjects(getProjects())
-    setIsLoading(false)
-  }, [])
-
-  const refresh = () => {
-    setProjects(getProjects())
-  }
-
-  return { projects, isLoading, refresh }
-}
-
-export function useMessages() {
-  const [messages, setMessages] = useState<Message[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+function useRecords<T>(
+  watch: (receive: (records: T[]) => void, fail: (error: Error) => void) => () => void,
+  initialRecords?: T[],
+  enabled = true,
+) {
+  const [records, setRecords] = useState<T[]>(initialRecords ?? [])
+  const [isLoading, setIsLoading] = useState(initialRecords === undefined)
+  const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
-    setMessages(getMessages())
-    setIsLoading(false)
-  }, [])
+    if (!enabled) return
 
-  const refresh = () => {
-    setMessages(getMessages())
-  }
+    return watch((items) => {
+      setRecords(items)
+      setError(null)
+      setIsLoading(false)
+    }, (error) => {
+      setError(error)
+      setIsLoading(false)
+    })
+  }, [watch, enabled])
 
-  return { messages, isLoading, refresh }
+  return { records, isLoading, error }
 }
+
+export const useProjects = (initialRecords?: Project[], enabled?: boolean) =>
+  useRecords(watchProjects, initialRecords, enabled)
+
+export const useServices = (initialRecords?: Service[], enabled?: boolean) =>
+  useRecords(watchServices, initialRecords, enabled)
+
+export const useMessages = () => useRecords(watchMessages)
