@@ -2,7 +2,7 @@ import Link from "next/link"
 import "./Footer.css"
 
 export default function Footer() {
-  const currentYear = new Date().getFullYear()
+  const atualizaAno = new Date().getFullYear()
 
   return (
     <footer className="footer">
@@ -54,7 +54,7 @@ export default function Footer() {
         </div>
 
         <div className="footer-bottom">
-          <p>&copy; {currentYear} CodeBros. Desenvolvido por Weverton  Blanco.</p>
+          <p>&copy; {atualizaAno} CodeBros. Desenvolvido por Weverton  Blanco.</p>
         </div>
       </div>
     </footer>
