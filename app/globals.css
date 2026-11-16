@@ -385,3 +385,18 @@ a:hover {
     padding: var(--spacing-xl) 0;
   }
 }
+
+/* Public service, portfolio and guide pages */
+.content-page { padding-top: 130px; padding-bottom: 72px; max-width: 960px; min-height: 75vh; }
+.content-page header { margin: 32px 0 48px; }
+.content-page h1 { font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1.15; margin-bottom: 24px; }
+.content-page h2 { font-size: 1.5rem; margin-bottom: 16px; }
+.content-page p, .content-page li { color: var(--color-text-secondary); line-height: 1.8; margin-bottom: 16px; }
+.content-page section { margin: 40px 0; }
+.content-page ul { padding-left: 24px; list-style: disc; }
+.content-page a:not(.cta-button), .service-page-links a { color: var(--color-cyan-light); text-decoration: underline; text-underline-offset: 4px; }
+.case-image { width: 100%; height: auto; max-height: 600px; object-fit: contain; border-radius: 16px; }
+.preserve-lines { white-space: pre-line; overflow-wrap: anywhere; }
+.service-page-links { display: flex; flex-wrap: wrap; gap: 16px 24px; justify-content: center; margin-bottom: 32px; }
+.project-title a { color: inherit; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--color-cyan-light); outline-offset: 5px; }

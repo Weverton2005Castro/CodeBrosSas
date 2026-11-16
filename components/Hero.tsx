@@ -46,6 +46,7 @@ export default function Hero() {
 
     window.addEventListener("mousemove", handleMouseMove)
 
+    let animationFrame = 0
     const animate = () => {
       ctx.fillStyle = "rgba(10, 10, 10, 0.1)"
       ctx.fillRect(0, 0, canvas.width, canvas.height)
@@ -92,7 +93,7 @@ export default function Hero() {
         })
       })
 
-      requestAnimationFrame(animate)
+      animationFrame = requestAnimationFrame(animate)
     }
 
     animate()
@@ -105,6 +106,7 @@ export default function Hero() {
     window.addEventListener("resize", handleResize)
 
     return () => {
+      cancelAnimationFrame(animationFrame)
       window.removeEventListener("mousemove", handleMouseMove)
       window.removeEventListener("resize", handleResize)
     }

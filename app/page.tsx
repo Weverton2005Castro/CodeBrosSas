@@ -1,3 +1,6 @@
+import { pageMetadata, siteUrl } from "@/lib/seo"
+
+export const metadata = pageMetadata("Criação de sites, sistemas web e aplicativos", "Desenvolvimento de sites, sistemas web, aplicativos e integrações sob medida. Conheça o portfólio da CodeBros e solicite um orçamento.", "/")
 import { Suspense } from "react"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/Footer"
@@ -18,6 +21,7 @@ async function PublicServices() {
 export default function HomePage() {
   return (
     <>
+      {siteUrl && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "Organization", name: "CodeBros", url: siteUrl, email: "codebroscontato@gmail.com" }).replace(/</g, "\\u003c") }} />}
       <Navbar />
       <main>
         <Hero />

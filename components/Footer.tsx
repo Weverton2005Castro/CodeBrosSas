@@ -30,6 +30,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/contact">Contato</Link>
+              </li><li><Link href="/guias">Guias para seu projeto</Link>
               </li>
             </ul>
           </div>
@@ -37,10 +38,10 @@ export default function Footer() {
           <div className="footer-section">
             <h4>Serviços</h4>
             <ul>
-              <li>Sites e Landing Pages</li>
-              <li>Sistemas Web</li>
-              <li>Aplicativos Mobile</li>
-              <li>Integrações</li>
+              <li><Link href="/criacao-de-sites">Sites e Landing Pages</Link></li>
+              <li><Link href="/desenvolvimento-de-sistemas">Sistemas Web</Link></li>
+              <li><Link href="/aplicativos">Aplicativos Mobile</Link></li>
+              <li><Link href="/integracoes">Integrações</Link></li>
             </ul>
           </div>
 

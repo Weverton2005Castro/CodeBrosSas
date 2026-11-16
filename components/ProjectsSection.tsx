@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
+import { projectPath } from "@/lib/seo"
 import { useProjects } from "@/hooks/use-data"
 import type { Project } from "@/lib/catalog"
 import "./ProjectsSection.css"
@@ -30,11 +32,11 @@ export default function ProjectsSection({ initialProjects }: { initialProjects?:
                 <div className="project-image-container">
                   <img src={project.image || "/placeholder.svg"} alt={project.title} className="project-image" loading="lazy" decoding="async" />
                   <div className="project-overlay">
-                    <span className="view-details">Ver detalhes</span>
+                    <Link href={projectPath(project.id)} className="view-details" onClick={(event) => event.stopPropagation()}>Ver projeto</Link>
                   </div>
                 </div>
                 <div className="project-content">
-                  <h3 className="project-title">{project.title}</h3>
+                  <h3 className="project-title"><Link href={projectPath(project.id)} onClick={(event) => event.stopPropagation()}>{project.title}</Link></h3>
                   <p className="project-description">{project.description}</p>
                   <div className="project-tags">
                     {project.tags.map((tag, index) => (
@@ -71,6 +73,7 @@ export default function ProjectsSection({ initialProjects }: { initialProjects?:
                   </span>
                 ))}
               </div>
+              <Link href={projectPath(selectedProject.id)} className="modal-demo-button">Página completa do projeto</Link>
               {selectedProject.demoUrl && selectedProject.demoUrl !== "#" && (
                 <a
                   href={selectedProject.demoUrl}

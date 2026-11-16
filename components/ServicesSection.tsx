@@ -1,5 +1,7 @@
 "use client"
 
+import Link from "next/link"
+import { servicePages } from "@/lib/service-pages"
 import { useServices } from "@/hooks/use-data"
 import type { Service } from "@/lib/catalog"
 import "./ServicesSection.css"
@@ -17,6 +19,9 @@ export default function ServicesSection({ initialServices }: { initialServices?:
           <p className="section-subtitle">Soluções completas para transformar seu negócio digital</p>
         </div>
 
+        <nav className="service-page-links" aria-label="Conheça nossos serviços">
+          {servicePages.map((service) => <Link key={service.slug} href={`/${service.slug}`}>{service.title}</Link>)}
+        </nav>
         {isLoading && <p role="status">Carregando serviços…</p>}
         {error && <p role="alert">Não foi possível carregar os serviços.</p>}
         {!isLoading && !error && services.length === 0 && <p>Nenhum serviço publicado ainda.</p>}

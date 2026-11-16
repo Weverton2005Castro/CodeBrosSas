@@ -1,3 +1,4 @@
+import { siteUrl } from "@/lib/seo"
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
@@ -12,17 +13,11 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "CodeBros - Transformando ideias em código que vende",
-  description:
-    "Desenvolvimento de sites, sistemas web, aplicativos mobile e soluções personalizadas. Fundada por Weverton, desenvolvedor freelancer especializado em projetos sob medida.",
-  keywords: "desenvolvimento web, sites personalizados, sistemas web, aplicativos mobile, freelancer, CodeBros",
+  ...(siteUrl ? { metadataBase: new URL(siteUrl) } : {}),
+  title: { default: "CodeBros | Criação de sites, sistemas web e aplicativos", template: "%s | CodeBros" },
+  description: "Desenvolvimento de sites, sistemas web, aplicativos e integrações sob medida. Conheça o portfólio da CodeBros e solicite um orçamento.",
   authors: [{ name: "Weverton - CodeBros" }],
-  openGraph: {
-    title: "CodeBros - Transformando ideias em código que vende",
-    description: "Desenvolvimento de projetos, sites e sistemas personalizados",
-    type: "website",
-  },
-    generator: 'v0.app'
+  verification: { google: process.env.GOOGLE_SITE_VERIFICATION },
 }
 
 export default function RootLayout({
@@ -32,9 +27,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <head>
-        <link rel="icon" href="/favicon.ico" />
-      </head>
       <body className={inter.variable}>
         <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
         <Analytics />
