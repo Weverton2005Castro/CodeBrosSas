@@ -3,7 +3,6 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
-import { Suspense } from "react"
 import "./globals.css"
 
 const inter = Inter({
@@ -14,8 +13,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   ...(siteUrl ? { metadataBase: new URL(siteUrl) } : {}),
-  title: { default: "CodeBros | Criação de sites, sistemas web e aplicativos", template: "%s | CodeBros" },
-  description: "Desenvolvimento de sites, sistemas web, aplicativos e integrações sob medida. Conheça o portfólio da CodeBros e solicite um orçamento.",
+  title: { default: "CodeBros | Sites e sistemas em Manaus", template: "%s | CodeBros" },
+  description: "Criação de sites, sistemas, aplicativos e automação para empresas em Manaus, AM. Conheça a CodeBros e solicite um orçamento.",
   authors: [{ name: "Weverton - CodeBros" }],
   verification: { google: process.env.GOOGLE_SITE_VERIFICATION },
 }
@@ -28,7 +27,8 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={inter.variable}>
-        <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+        <a className="skip-link" href="#conteudo">Pular para o conteúdo</a>
+        {children}
         <Analytics />
       </body>
     </html>

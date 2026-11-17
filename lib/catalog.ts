@@ -4,6 +4,7 @@ const webUrl = z.string().regex(/^https?:\/\/[^\s]+$/i)
 const projectImage = z.union([webUrl, z.string().regex(/^\/(?![\\/])[^\s]*$/), z.literal("")])
 const projectDemoUrl = z.union([webUrl, z.literal(""), z.literal("#")]).optional()
 export const projectFields = z.object({
+  kind: z.enum(["real", "demo", "unspecified"]).optional(),
   title: z.string().trim().min(1),
   description: z.string().trim().min(1),
   image: projectImage,

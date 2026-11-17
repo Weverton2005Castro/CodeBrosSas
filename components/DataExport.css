@@ -71,3 +71,4 @@
     width: 100%;
   }
 }
+@media(max-width:600px) { .data-export-section { padding: 20px; } }

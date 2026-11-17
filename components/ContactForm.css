@@ -253,3 +253,16 @@
     padding: var(--spacing-lg);
   }
 }
+
+.whatsapp-button { background: #146b3c; color: #fff; }
+.submit-button { background: #6d28d9; color: #fff; }
+.contact-form input:focus-visible, .contact-form select:focus-visible, .contact-form textarea:focus-visible { outline: 3px solid #67e8f9; outline-offset: 3px; }
+.contact-content { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+.contact-info, .contact-form-container, .contact-detail-item > div { min-width: 0; }
+.contact-detail-item a { overflow-wrap: anywhere; }
+.detail-icon { flex-shrink: 0; }
+.field-hint, .character-count { color: #b8b6c3; font-size: .85rem; margin: 0; }
+.character-count { text-align: right; }
+.contact-form input, .contact-form select, .contact-form textarea { width: 100%; min-width: 0; }
+@media(max-width:1024px) { .contact-content { grid-template-columns: minmax(0, 1fr); gap: 36px; } }
+@media(max-width:480px) { .contact-form-container { padding: 20px; } .contact-detail-item { padding: 16px; gap: 12px; } .detail-icon { width: 44px; height: 44px; font-size: 1.5rem; } .contact-detail-item:hover { transform: none; } .whatsapp-button { padding-inline: 16px; } }

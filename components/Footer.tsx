@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { contactEmail, whatsappUrl } from "@/lib/contact"
 import "./Footer.css"
 
 export default function Footer() {
@@ -48,8 +49,9 @@ export default function Footer() {
           <div className="footer-section">
             <h4>Contato</h4>
             <ul>
-              <li>codebroscontato@gmail.com</li>
-              <li>WhatsApp: +55 92 8535-3980</li>
+              <li><a href={`mailto:${contactEmail}`}>{contactEmail}</a></li>
+              <li><a href={whatsappUrl} target="_blank" rel="noopener noreferrer">WhatsApp: +55 92 8535-3980</a></li>
+              <li>Manaus – AM, Brasil</li>
             </ul>
           </div>
         </div>

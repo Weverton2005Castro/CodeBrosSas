@@ -422,3 +422,23 @@
     width: 100%;
   }
 }
+
+.admin-nav-content { flex-wrap: wrap; gap: 16px; }
+.admin-logo { flex-wrap: wrap; min-width: 0; }
+.admin-tabs { flex-wrap: wrap; gap: 8px; }
+.project-info, .message-item, .message-header { min-width: 0; overflow-wrap: anywhere; }
+.project-actions { flex-wrap: wrap; }
+.admin-dashboard button { min-height: 44px; }
+.admin-dashboard .modal-body select { width: 100%; min-width: 0; min-height: 44px; padding: 12px; border: 2px solid #3f3f46; border-radius: 8px; background: #121212; color: white; font: inherit; }
+@media(max-width:600px) {
+  .admin-content { padding: 24px 16px; }
+  .admin-nav-content { padding-inline: 16px; }
+  .admin-logo { font-size: 1.4rem; }
+  .tab-button { padding: 12px; font-size: 1rem; flex: 1 1 auto; }
+  .project-item, .message-item { padding: 20px; }
+  .project-actions { width: 100%; }
+  .project-actions button { flex: 1; }
+  .message-header { flex-wrap: wrap; gap: 12px; }
+  .admin-dashboard .modal-content { max-height: 90dvh; }
+  .admin-dashboard .modal-body { padding: 20px; }
+}

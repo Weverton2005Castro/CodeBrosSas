@@ -1,7 +1,8 @@
 "use client"
-import { useState, type FormEvent } from "react"
-import { addMessage, type MessageInput } from "@/lib/storage"
+import { useState, useEffect, type FormEvent } from "react"
+import type { MessageInput } from "@/lib/storage"
 import "./ContactForm.css"
+import { contactEmail, whatsappUrl } from "@/lib/contact"
 
 export default function ContactForm() {
   const [formData, setFormData] = useState<MessageInput>({
@@ -11,15 +12,25 @@ export default function ContactForm() {
     message: "",
   })
 
+  useEffect(() => {
+    const type = new URLSearchParams(window.location.search).get("tipo")
+    if (type && ["site", "sistema", "app", "integracao", "consultoria", "outro"].includes(type)) {
+      setFormData((current) => ({ ...current, projectType: type }))
+    }
+  }, [])
+  const projectNames: Record<string, string> = { site: "Site / Landing Page", sistema: "Sistema Web", app: "Aplicativo Mobile", integracao: "Integração / Automação", consultoria: "Consultoria", outro: "Outro projeto" }
+  const projectHints: Record<string, string> = { site: "Quais serviços você oferece e quais páginas gostaria de incluir?", sistema: "Qual processo precisa organizar? Quantas pessoas vão usar o sistema?", app: "Quem vai usar o aplicativo e qual tarefa ele deve facilitar?", integracao: "Quais ferramentas usa hoje e qual tarefa gostaria de automatizar?" }
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
+    if (isSubmitting) return
     setIsSubmitting(true)
     setSubmitStatus("idle")
 
     try {
+      const { addMessage } = await import("@/lib/storage")
       await addMessage(formData)
       setFormData({ name: "", email: "", projectType: "", message: "" })
       setSubmitStatus("success")
@@ -32,9 +43,9 @@ export default function ContactForm() {
 
   const handleWhatsApp = () => {
     const message = encodeURIComponent(
-      `Olá! Gostaria de solicitar um orçamento para: ${formData.projectType || "um projeto"}`,
+      `Olá! Gostaria de solicitar um orçamento para: ${projectNames[formData.projectType] || "um projeto"}`,
     )
-    window.open(`https://wa.me/5592985353980?text=${message}`, "_blank")
+    window.open(`https://wa.me/5592985353980?text=${message}`, "_blank", "noopener,noreferrer")
   }
 
   return (
@@ -54,7 +65,7 @@ export default function ContactForm() {
                 <div className="detail-icon">📧</div>
                 <div>
                   <h3>Email</h3>
-                  <p>codebroscontato@gmail.com</p>
+                  <p><a href={`mailto:${contactEmail}`}>{contactEmail}</a></p>
                 </div>
               </div>
 
@@ -62,7 +73,7 @@ export default function ContactForm() {
                 <div className="detail-icon">📱</div>
                 <div>
                   <h3>WhatsApp</h3>
-                  <p>+55 92 8535-3980</p>
+                  <p><a href={whatsappUrl}>+55 92 8535-3980</a></p>
                 </div>
               </div>
 
@@ -70,7 +81,7 @@ export default function ContactForm() {
                 <div className="detail-icon">⏰</div>
                 <div>
                   <h3>Horário</h3>
-                  <p>Seg - Sex: 9h às 18h</p>
+                  <p>Seg - Sex: 9h às 18h · Manaus, AM</p>
                 </div>
               </div>
             </div>
@@ -82,12 +93,15 @@ export default function ContactForm() {
           </div>
 
           <div className="contact-form-container">
-            <form onSubmit={handleSubmit} className="contact-form">
+            <form onChange={() => { if (submitStatus !== "idle") setSubmitStatus("idle") }} onSubmit={handleSubmit} className="contact-form" aria-busy={isSubmitting}>
+              <p>Campos obrigatórios. Usaremos os dados informados para responder à sua solicitação.</p>
               <div className="form-group">
                 <label htmlFor="name">Nome completo</label>
                 <input
                   type="text"
                   id="name"
+                  name="name"
+                  autoComplete="name"
                   maxLength={150}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -101,6 +115,8 @@ export default function ContactForm() {
                 <input
                   type="email"
                   id="email"
+                  name="email"
+                  autoComplete="email"
                   maxLength={254}
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -113,6 +129,7 @@ export default function ContactForm() {
                 <label htmlFor="projectType">Tipo de Projeto</label>
                 <select
                   id="projectType"
+                  name="projectType"
                   value={formData.projectType}
                   onChange={(e) => setFormData({ ...formData, projectType: e.target.value })}
                   required
@@ -131,13 +148,17 @@ export default function ContactForm() {
                 <label htmlFor="message">Mensagem</label>
                 <textarea
                   id="message"
+                  name="message"
+                  aria-describedby="message-hint message-count"
                   maxLength={5000}
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   required
-                  placeholder="Conte-nos sobre seu projeto..."
+                  placeholder={projectHints[formData.projectType] || "Conte-nos sobre seu projeto..."}
                   rows={5}
                 />
+                <p id="message-hint" className="field-hint">{projectHints[formData.projectType] || "Descreva sua ideia, objetivo e funcionalidades desejadas."}</p>
+                <span id="message-count" className="character-count">{formData.message.length}/5000 caracteres</span>
               </div>
 
               <button
@@ -161,10 +182,10 @@ export default function ContactForm() {
               </button>
 
               {submitStatus === "error" && (
-                <p role="alert">Não foi possível enviar a mensagem. Tente novamente.</p>
+                <p role="alert">Não foi possível enviar a mensagem. Tente novamente ou <a href={whatsappUrl}>fale pelo WhatsApp</a>.</p>
               )}
               {submitStatus === "success" && (
-                <div className="success-message">Mensagem enviada! Entraremos em contato em breve.</div>
+                <div className="success-message" role="status">Mensagem enviada! Entraremos em contato em breve.</div>
               )}
             </form>
           </div>

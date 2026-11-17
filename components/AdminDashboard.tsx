@@ -12,6 +12,7 @@ type Editor = {
   description: string
   image?: string
   tags?: string
+  kindLabel?: "real" | "demo" | "unspecified"
   demoUrl?: string
   icon?: string
 }
@@ -59,6 +60,7 @@ export default function AdminDashboard({ onLogout, sessionError, projectData, se
           image: editor.image?.trim() ?? "",
           tags: editor.tags?.split(",").map((tag) => tag.trim()) ?? [],
           demoUrl: editor.demoUrl?.trim() ?? "",
+          kind: editor.kindLabel ?? projects.find((project) => project.id === editor.id)?.kind ?? "unspecified",
         })
       } else {
         await saveService(editor.id, { title: editor.title, description: editor.description, icon: editor.icon ?? "" })
@@ -271,6 +273,7 @@ export default function AdminDashboard({ onLogout, sessionError, projectData, se
                     <input id="entry-tags" disabled={busy} value={editor.tags ?? ""}
                       onChange={(event) => setEditor({ ...editor, tags: event.target.value })} />
                   </div>
+                  <div className="form-group"><label htmlFor="entry-kind">Natureza do projeto</label><select id="entry-kind" disabled={busy} value={editor.kindLabel ?? projects.find((project) => project.id === editor.id)?.kind ?? "unspecified"} onChange={(event) => setEditor({ ...editor, kindLabel: event.target.value as "real" | "demo" | "unspecified" })}><option value="unspecified">Não informada</option><option value="real">Projeto real</option><option value="demo">Projeto demonstrativo</option></select></div>
                   <div className="form-group">
                     <label htmlFor="entry-demo">URL da demonstração (opcional)</label>
                     <input id="entry-demo" type="url" disabled={busy} value={editor.demoUrl === "#" ? "" : editor.demoUrl ?? ""}

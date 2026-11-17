@@ -145,3 +145,20 @@
     font-size: 1.25rem;
   }
 }
+.navbar { background: #0a0a0af5; border-bottom: 1px solid #27232e; }
+.logo-text-accent { animation: none; }
+.mobile-menu-toggle { min-width: 44px; min-height: 44px; justify-content: center; align-items: center; }
+.navbar-menu li:last-child a { color: #e6dbff; }
+@media(max-width:768px) { .navbar-menu { visibility: hidden; } .navbar-menu.open { visibility: visible; } }
+.menu-backdrop { display: none; }
+.navbar-container { position: relative; z-index: 1; }
+@media(max-width:768px) {
+  .navbar, .navbar.scrolled { padding-block: 12px; }
+  .navbar-menu { top: 69px; max-height: calc(100dvh - 70px); overflow-y: auto; align-items: stretch; }
+  .navbar-menu li a { display: block; padding: 12px; text-align: center; border-radius: 8px; }
+  .navbar-menu li a:hover { background: #21172e; }
+  .menu-backdrop { display: block; position: fixed; inset: 69px 0 0; background: #0009; border: 0; }
+  .mobile-menu-toggle[aria-expanded="true"] span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+  .mobile-menu-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+  .mobile-menu-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+}

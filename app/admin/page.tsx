@@ -7,5 +7,5 @@ export default async function AdminPage() {
     loadInitialCatalog(readPublicServices),
   ])
 
-  return <AdminSession initialProjects={initialProjects} initialServices={initialServices} />
+  return <main id="conteudo"><AdminSession initialProjects={initialProjects} initialServices={initialServices} /></main>
 }

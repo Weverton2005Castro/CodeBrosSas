@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import "./Navbar.css"
 
 export default function Navbar() {
+  const toggleRef = useRef<HTMLButtonElement>(null)
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
@@ -13,12 +14,25 @@ export default function Navbar() {
       setIsScrolled(window.scrollY > 50)
     }
 
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
+    handleScroll()
+    window.addEventListener("scroll", handleScroll, { passive: true })
+      return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
+  useEffect(() => {
+    if (!isMobileMenuOpen) return
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { setIsMobileMenuOpen(false); toggleRef.current?.focus() }
+    }
+    const handleResize = () => { if (window.innerWidth > 768) setIsMobileMenuOpen(false) }
+    document.addEventListener("keydown", handleKey)
+    window.addEventListener("resize", handleResize)
+    return () => { document.removeEventListener("keydown", handleKey); window.removeEventListener("resize", handleResize) }
+  }, [isMobileMenuOpen])
+
   return (
-    <nav className={`navbar ${isScrolled ? "scrolled" : ""}`}>
+    <nav aria-label="Navegação principal" className={`navbar ${isScrolled ? "scrolled" : ""}`}>
+      {isMobileMenuOpen && <button type="button" className="menu-backdrop" aria-label="Fechar menu de navegação" onClick={() => setIsMobileMenuOpen(false)} />}
       <div className="navbar-container">
         <Link href="/" className="navbar-logo">
           <span className="logo-text">Code</span>
@@ -26,16 +40,19 @@ export default function Navbar() {
         </Link>
 
         <button
+          ref={toggleRef}
+          aria-expanded={isMobileMenuOpen}
+          aria-controls="menu-principal"
           className="mobile-menu-toggle"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          aria-label="Toggle menu"
+          aria-label={isMobileMenuOpen ? "Fechar menu" : "Abrir menu"}
         >
           <span></span>
           <span></span>
           <span></span>
         </button>
 
-        <ul className={`navbar-menu ${isMobileMenuOpen ? "open" : ""}`}>
+        <ul id="menu-principal" onKeyDown={(event) => { if (event.key === "Escape") { setIsMobileMenuOpen(false); toggleRef.current?.focus() } }} className={`navbar-menu ${isMobileMenuOpen ? "open" : ""}`}>
           <li>
             <Link href="/" onClick={() => setIsMobileMenuOpen(false)}>
               Início
@@ -53,14 +70,10 @@ export default function Navbar() {
           </li>
           <li>
             <Link href="/contact" onClick={() => setIsMobileMenuOpen(false)}>
-              Contato
+              Solicitar orçamento
             </Link>
           </li>
-          <li>
-            {/* <Link href="/admin" className="admin-link" onClick={() => setIsMobileMenuOpen(false)}>
-              Admin
-            </Link> */}
-          </li>
+
         </ul>
       </div>
     </nav>

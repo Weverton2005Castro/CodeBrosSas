@@ -75,3 +75,6 @@
     gap: var(--spacing-lg);
   }
 }
+.footer-content { grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }
+.footer-section a { display: inline-block; padding-block: 8px; overflow-wrap: anywhere; max-width: 100%; }
+@media(max-width:600px) { .footer-content { grid-template-columns: 1fr; } }

@@ -11,3 +11,7 @@
 A área administrativa recebe `noindex`; isso não substitui autenticação. As páginas de projetos usam IDs permanentes, preservando URLs quando o título é alterado. Falhas de leitura não são tratadas como projeto inexistente; IDs ausentes retornam 404 após consulta bem-sucedida.
 
 Referências: https://developers.google.com/search/docs/fundamentals/seo-starter-guide?hl=pt-br e https://nextjs.org/docs/app/api-reference/functions/generate-metadata
+
+## SEO local
+
+A home e os serviços destacam Manaus, AM. O JSON-LD usa apenas cidade, estado, país e os contatos existentes. Valide-o no Rich Results Test; dados estruturados não garantem exibição especial. Revise a natureza dos projetos no painel antes de identificá-los como reais ou demonstrativos. Consulte `AUDITORIA.md` para alterações, limites de validação e próximos passos.
